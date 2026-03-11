@@ -26,6 +26,7 @@ env/
 .env.*.local
 config.json
 secret.key
+*.session
 
 # --- Зависимости и Установка ---
 *.egg-info/
@@ -56,3 +57,6 @@ docs/_build/
 # --- ОС файлы ---
 .DS_Store
 Thumbs.db
+
+# others
+db_sources.json

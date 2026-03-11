@@ -1,0 +1,20 @@
+{
+  "sources":[
+    {
+        "source": "@parsed_chanel1",
+        "destination": "@my_chanel",
+        "max_items": 5,
+        "max_item_age": 86400,
+        "update_period": 3600,
+        "last_update": null
+    },
+    {
+        "source": "@parsed_chanel2",
+        "destination": "@my_chanel",
+        "max_items": 5,
+        "max_item_age": 86400,
+        "update_period": 3600,
+        "last_update": null
+    }
+  ]
+}
