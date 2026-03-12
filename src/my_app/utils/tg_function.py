@@ -3,7 +3,9 @@ from telethon import TelegramClient
 from db.sources import Sources
 from schemas.message_schema import MessageSchema
 from schemas.sources_schema import SourceSchema
+from loguru import logger
 
+@logger.catch
 async def get_last_messages(client: TelegramClient, source_id: int):
     source = Sources.items[source_id]
     async for message in client.iter_messages(
@@ -11,6 +13,7 @@ async def get_last_messages(client: TelegramClient, source_id: int):
         return message
     return None
 
+@logger.catch
 async def repost_new_messages(client: TelegramClient, source_id: int):
     message = await get_last_messages(client, source_id)
     source = Sources.items[source_id]
@@ -22,12 +25,13 @@ async def repost_new_messages(client: TelegramClient, source_id: int):
                 forbidden=source.forbidden,
                 allowed=source.allowed)
             await repost_message(client, message.id, source_id)
-            print(f"Notice: [{source.source} -> {source.target}]: The message {message.id} posted")
+            logger.info(f"Notice: [{source.source} -> {source.target}]: The message {message.id} posted")
         except ValueError as e:
-            print(f"Notice: [{source.source} -> {source.target}]: The message {message.id} did not validate")
+            logger.info(f"Notice: [{source.source} -> {source.target}]: The message {message.id} did not validate")
     else:
-        print(f"Notice: [{source.source} -> {source.target}]: no more messages")
+        logger.info(f"Notice: [{source.source} -> {source.target}]: no more messages")
 
+@logger.catch
 async def repost_message(client: TelegramClient, message_id: int, source_id: int):
      await client.forward_messages(
             entity=Sources.items[source_id].target, 
@@ -40,6 +44,7 @@ async def print_auth_qr(qr_login):
     qr.add_data(qr_login.url)
     qr.print_ascii()
 
+@logger.catch
 async def tg_auth_qr(client: TelegramClient):
     if not await client.is_user_authorized():
         qr_login = await client.qr_login()

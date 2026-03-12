@@ -1,3 +1,4 @@
 from db.sources import Sources
+from config import Config
 
-Sources.init("db_sources.json")
+Sources.init(Config.DB_SOURCES_FILE)

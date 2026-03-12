@@ -1,20 +1,13 @@
 {
-  "sources":[
-    {
-        "source": "@parsed_chanel1",
-        "destination": "@my_chanel",
-        "max_items": 5,
-        "max_item_age": 86400,
-        "update_period": 3600,
-        "last_update": null
-    },
-    {
-        "source": "@parsed_chanel2",
-        "destination": "@my_chanel",
-        "max_items": 5,
-        "max_item_age": 86400,
-        "update_period": 3600,
-        "last_update": null
-    }
-  ]
+    "sources": [
+        {
+            "source": "@testsource",
+            "target": "@testtarget",
+            "limit": 1,
+            "update_period": 3600,
+            "last_message_id": 0,
+            "allowed": "пешеходs,человек",
+            "forbidden": "любой1,найс"
+        }
+    ]
 }
