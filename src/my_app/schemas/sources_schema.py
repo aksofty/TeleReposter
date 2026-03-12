@@ -6,8 +6,8 @@ class SourceSchema(BaseModel):
     limit: int
     update_period: int
     last_message_id: int
-    filter_in: str
-    filter_out: str
+    allowed: str
+    forbidden: str
 
     model_config = ConfigDict(from_attributes=True)
 
