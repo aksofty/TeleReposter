@@ -2,9 +2,7 @@ version: '1.0'
 
 services:
   telereposter:
-    container_name: telereposter
     build: .
     volumes:
       - './volumes/db_sources.json:/app/data/db_sources.json'
       - './volumes/all_logs.log:/app/logs/all_logs.log'
-    restart: always
