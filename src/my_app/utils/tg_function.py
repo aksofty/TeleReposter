@@ -25,11 +25,11 @@ async def repost_new_messages(client: TelegramClient, source_id: int):
                 forbidden=source.forbidden,
                 allowed=source.allowed)
             await repost_message(client, message.id, source_id)
-            logger.info(f"Notice: [{source.source} -> {source.target}]: The message {message.id} posted")
+            logger.info(f"[{source.source} -> {source.target}]: The message {message.id} posted")
         except ValueError as e:
-            logger.info(f"Notice: [{source.source} -> {source.target}]: The message {message.id} did not validate")
+            logger.info(f"[{source.source} -> {source.target}]: The message {message.id} did not validate")
     else:
-        logger.info(f"Notice: [{source.source} -> {source.target}]: no more messages")
+        logger.info(f"[{source.source} -> {source.target}]: no more messages")
 
 @logger.catch
 async def repost_message(client: TelegramClient, message_id: int, source_id: int):
