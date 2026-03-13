@@ -4,5 +4,5 @@ services:
   telereposter:
     build: .
     volumes:
-      - './volumes/db_sources.json:/app/data/db_sources.json'
-      - './volumes/all_logs.log:/app/logs/all_logs.log'
+      - './volumes/data:/app/data'
+      - './volumes/logs:/app/logs'
