@@ -6,30 +6,33 @@ from schemas.sources_schema import SourceSchema
 from loguru import logger
 
 @logger.catch
-async def get_last_messages(client: TelegramClient, source_id: int):
-    source = Sources.items[source_id]
-    async for message in client.iter_messages(
-        source.source, min_id=source.last_message_id, limit=source.limit):
-        return message
-    return None
-
-@logger.catch
 async def repost_new_messages(client: TelegramClient, source_id: int):
-    message = await get_last_messages(client, source_id)
+    have_message = False
     source = Sources.items[source_id]
-    if message is not None:
-        try:
-            await Sources.update_last_message_id(source_id, message.id)
-            MessageSchema(
-                content=message.text,
-                forbidden=source.forbidden,
-                allowed=source.allowed)
-            await repost_message(client, message.id, source_id)
-            logger.info(f"[{source.source} -> {source.target}]: The message {message.id} posted")
-        except ValueError as e:
-            logger.info(f"[{source.source} -> {source.target}]: The message {message.id} did not validate")
+
+    logger.info(f"[{source.source} -> {source.target}]:  Requesting for new messages...")
+
+    if source.last_message_id > 0:
+        messages = client.iter_messages(source.source, min_id=source.last_message_id, limit=source.limit)
     else:
-        logger.info(f"[{source.source} -> {source.target}]: no more messages")
+        messages = client.iter_messages(source.source, limit=source.limit)
+    
+    async for message in messages:
+        have_message = True
+        if message is not None:
+            try:
+                await Sources.update_last_message_id(source_id, message.id)
+                MessageSchema(
+                    content=message.text,
+                    forbidden=source.forbidden,
+                    allowed=source.allowed)
+                await repost_message(client, message.id, source_id)
+                logger.info(f"The message {message.id} posted")
+            except ValueError as e:
+                logger.info(f"The message {message.id} did not validate")
+
+    if not have_message:  
+        logger.info(f"There are no messages to post")
 
 @logger.catch
 async def repost_message(client: TelegramClient, message_id: int, source_id: int):

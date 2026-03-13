@@ -26,12 +26,13 @@ class Sources():
             with open(cls.json_file, "w", encoding="utf-8") as f:
                 f.write(source_list.model_dump_json(indent=4))
         except ValueError as e:
-            logger.info(f"Notice Source Commit: Commit error: {e}")
+            logger.info(f"Commit error: {e}")
 
     @classmethod
     async def update_last_message_id(cls, source_id: int, message_id: int = 0):
         try:
-            cls.items[source_id].last_message_id = message_id
-            cls.commit()
+            if cls.items[source_id].last_message_id < message_id:
+                cls.items[source_id].last_message_id = message_id
+                cls.commit()
         except ValueError as e:
-            logger.info(f"update source error: {e}")
+            logger.info(f"Update source error: {e}")

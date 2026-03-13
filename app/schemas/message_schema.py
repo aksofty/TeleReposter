@@ -11,7 +11,7 @@ class MessageSchema(BaseModel):
     def check_filter_in(cls, v: str, info: ValidationInfo):
         ''' проверка на запрещенные и разрешенные слова '''
 
-        content_lower = v.lower()
+        content_lower = v.strip().lower()
 
         if len(content_lower)==0:
             raise ValueError(f"Отсутвует текст сообщения")
