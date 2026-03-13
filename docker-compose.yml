@@ -6,3 +6,4 @@ services:
     volumes:
       - './volumes/data:/app/data'
       - './volumes/logs:/app/logs'
+    restart: always

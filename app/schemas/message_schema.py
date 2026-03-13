@@ -4,6 +4,7 @@ class MessageSchema(BaseModel):
     forbidden: str
     allowed: str
     content: str
+    
 
     @field_validator('content')
     @classmethod
@@ -11,6 +12,10 @@ class MessageSchema(BaseModel):
         ''' проверка на запрещенные и разрешенные слова '''
 
         content_lower = v.lower()
+
+        if len(content_lower)==0:
+            raise ValueError(f"Отсутвует текст сообщения")
+
         a_words = info.data.get('allowed', '').lower()
         f_words = info.data.get('forbidden', '').lower()
 
