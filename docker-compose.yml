@@ -7,4 +7,4 @@ services:
     volumes:
       - './app/data/db_sources.json:/opt/TeleReposter/volumes/db_sources.json'
       - './app/logs/all_logs.log:/opt/TeleReposter/volumes/all_logs.log'
-  restart: always
+    restart: always
