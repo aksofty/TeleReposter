@@ -1,36 +1,24 @@
-from pydantic import BaseModel, ValidationInfo, field_validator, ValidationError
+from typing import List
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 class MessageSchema(BaseModel):
-    forbidden: str
-    allowed: str
-    content: str
+    forbidden: List[str] = Field(default_factory=list)
+    allowed: List[str] = Field(default_factory=list)
+    content: str = Field(default="")
     
-
-    @field_validator('content')
-    @classmethod
-    def check_filter_in(cls, v: str, info: ValidationInfo):
-        ''' проверка на запрещенные и разрешенные слова '''
-
-        content_lower = v.strip().lower()
-
-        if len(content_lower)==0:
-            raise ValueError(f"Отсутвует текст сообщения")
-
-        a_words = info.data.get('allowed', '').lower()
-        f_words = info.data.get('forbidden', '').lower()
-
-        if len(f_words)>0:
-            forbidden_list = [s.strip() for s in f_words.split(',')]
-            for word in forbidden_list:
-                if word in content_lower:
-                    raise ValueError(f"Текст содержит запрещенное слово: \"{word}\"")
-
-        if len(a_words)>0:
-            allowed_list = [s.strip() for s in a_words.split(',')]
-            for word in allowed_list:
-                if word in content_lower:
-                    return
-        else:
-            return
-
-        raise ValueError(f"Текст не содержит содержит нужных слов")
+    def is_valid_content(self)->bool:
+        text = self.content.strip().lower()
+        if not text:
+            return False
+        
+        if self.forbidden:
+            f_list = [w.strip().lower() for w in self.forbidden if w.strip()]
+            if any(word in text for word in f_list):
+                return False
+        
+        if self.allowed:
+            a_list = [w.strip().lower() for w in self.allowed if w.strip()]
+            if a_list:
+                return any(word in text for word in a_list)
+                  
+        return True

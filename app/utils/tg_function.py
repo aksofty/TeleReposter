@@ -19,16 +19,19 @@ async def repost_new_messages(client: TelegramClient, source_id: int):
     
     async for message in messages:
         have_message = True
-        if message is not None:
-            try:
-                await Sources.update_last_message_id(source_id, message.id)
-                MessageSchema(
-                    content=message.text,
-                    forbidden=source.forbidden,
-                    allowed=source.allowed)
+
+        if message:
+            await Sources.update_last_message_id(source_id, message.id)
+            msg = MessageSchema(
+                content=message.text,
+                forbidden=source.forbidden,
+                allowed=source.allowed
+            )
+
+            if msg.is_valid_content():
                 await repost_message(client, message.id, source_id)
                 logger.info(f"The message {message.id} posted")
-            except ValueError as e:
+            else:
                 logger.info(f"The message {message.id} did not validate")
 
     if not have_message:  
@@ -60,3 +63,5 @@ async def tg_auth_qr(client: TelegramClient):
             except Exception:
                 qr_login = await client.qr_login()
                 await print_auth_qr(qr_login)
+    else:   
+        pass
