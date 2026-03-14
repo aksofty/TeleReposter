@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime
+import sys
 from loguru import logger
 from telethon import TelegramClient
 from config import Config
@@ -10,8 +11,9 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 logger.remove()
-logger.add(lambda msg: print(msg, end=""), level="INFO")
-logger.add(Config.LOG_FILE, rotation="1 MB") 
+#logger.add(sys.stderr, level="DEBUG", colorize=True)
+logger.add(lambda msg: print(msg, end=""), level="DEBUG")
+logger.add(Config.LOG_FILE, rotation="1 MB")
 
 async def main():
     logger.info(f"Starting app at {datetime.now()}")

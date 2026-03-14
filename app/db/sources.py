@@ -30,9 +30,13 @@ class Sources():
 
     @classmethod
     async def update_last_message_id(cls, source_id: int, message_id: int = 0):
+        last_id = cls.items[source_id].last_message_id
         try:
-            if cls.items[source_id].last_message_id < message_id:
+            if last_id < message_id:
                 cls.items[source_id].last_message_id = message_id
                 cls.commit()
+                logger.info(f"Last ID updated to {message_id}")
+            else:
+                logger.info(f"Last ID is already higher [current: {last_id}]")
         except ValueError as e:
             logger.info(f"Update source error: {e}")
