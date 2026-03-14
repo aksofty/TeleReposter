@@ -56,7 +56,7 @@ async def repost_validated_messages(client: TelegramClient, source_id: int):
                 await repost_message(client, message_ids, source_id)
                 logger.info(f"(The) message(s) {message_ids} posted")
             else:
-                logger.info(f"The message #{message.id} did not validate {msg.content}")
+                logger.info(f"The message #{message.id} did not validate")
 
     if not have_message:  
         logger.info(f"There are no messages to post")
