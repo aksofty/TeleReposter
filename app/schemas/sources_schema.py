@@ -10,7 +10,9 @@ class SourceSchema(BaseModel):
     forbidden: list[str] = Field(default_factory=list) 
 
     cron: str = Field("*/60 * * * *")
-    last_message_id: int =0
+    last_message_id: int = Field(0)
+
+    drop_author: bool = Field(False)
 
     model_config = ConfigDict(
         from_attributes=True, 

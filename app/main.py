@@ -5,7 +5,7 @@ from telethon import TelegramClient
 from config import Config
 from db.sources import Sources
 from schemas.sources_schema import SourceSchema
-from utils.tg_function import repost_new_messages, tg_auth_qr
+from utils.tg_utils import repost_validated_messages, tg_auth_qr
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -31,7 +31,7 @@ async def main():
     for source_id, source in enumerate(Sources.items):
         job_id = f"repost_{source_id}"
         scheduler.add_job(
-            repost_new_messages, 
+            repost_validated_messages, 
             trigger=CronTrigger.from_crontab(source.cron),
             args = [client, source_id],
             id=job_id,
