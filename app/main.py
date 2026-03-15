@@ -5,7 +5,9 @@ from loguru import logger
 from telethon import TelegramClient
 from config import Config
 from db.sources import Sources
+from db.rss_sources import RssSources
 from schemas.sources_schema import SourceSchema
+from utils.rss_utils import post_new_rss_messages
 from utils.tg_utils import repost_validated_messages, tg_auth_qr
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -41,6 +43,17 @@ async def main():
         )          
         logger.debug(f"Job {job_id} scheduled with cron {source.cron}")
 
+    for source_id, rss_source in enumerate(RssSources.rss):
+        job_id = f"repost_rss_{source_id}"
+        scheduler.add_job(
+            post_new_rss_messages, 
+            trigger=CronTrigger.from_crontab(rss_source.cron),
+            args = [client, source_id],
+            id=job_id,
+            replace_existing=True
+        )          
+        logger.debug(f"Job rss {job_id} scheduled with cron {source.cron}")
+        
     scheduler.start()
     logger.info(f"Scheduler started")
 

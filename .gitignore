@@ -61,5 +61,6 @@ Thumbs.db
 # others
 db_sources.json
 db_sources_test.json
+db_rss.json
 test.py
 *.log

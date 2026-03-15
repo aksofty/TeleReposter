@@ -1,0 +1,16 @@
+{
+    "rss": [
+        {
+            "url": "https://www.airlines-inform.ru/news/rss/?enclosure",
+            "target": "@testaminta",
+            "header": "✈️",
+            "footer": "@Airlines_Inform\nВсе новости на [AirlinesInform](https://www.airlines-inform.ru/news/)",
+            "limit": 1,
+            "allowed": [],
+            "forbidden": [],
+            "cron": "* * * * *",
+            "reverse": true,
+            "last_identifier": "https://www.airlines-inform.ru/news/#Samara-Urgench-2026"
+        }
+    ]
+}
