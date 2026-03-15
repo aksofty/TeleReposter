@@ -1,8 +1,45 @@
 
+import io
+from itertools import dropwhile
+import re
 import feedparser
+import httpx
 from loguru import logger
 from telethon import TelegramClient
 from db.rss_sources import RssSources
+
+async def prepare_media_from_urls(urls, max_size_mb=5):
+    # Переводим МБ в байты
+    MAX_SIZE = max_size_mb * 1024 * 1024
+    media_list = []
+    
+    async with httpx.AsyncClient() as client:
+        for url in urls:
+            try:
+                # 1. Сначала проверяем только заголовок (без скачивания контента)
+                head = await client.head(url, follow_redirects=True)
+                file_size = int(head.headers.get("Content-Length", 0))
+
+                if file_size > MAX_SIZE:
+                    print(f"Пропуск {url}: файл слишком большой ({file_size / 1024 / 1024:.2f} MB)")
+                    continue
+
+                # 2. Если размер ок, скачиваем полностью
+                response = await client.get(url, timeout=10.0)
+                if response.status_code == 200:
+                    file = io.BytesIO(response.content)
+                    
+                    # Формируем чистое имя файла (без параметров после ?)
+                    clean_name = url.split('/')[-1].split('?')[0] or "image.jpg"
+                    file.name = clean_name
+                    
+                    media_list.append(file)
+            except Exception as e:
+                print(f"Ошибка при обработке {url}: {e}")
+                
+    return media_list
+
+
 
 def get_new_rss_messages(rss_source_id: int, reverse: bool=True):
     rss_source = RssSources.rss[rss_source_id]
@@ -10,24 +47,20 @@ def get_new_rss_messages(rss_source_id: int, reverse: bool=True):
     feed = feedparser.parse(rss_url)
 
     if feed.bozo:
-        logger.info(f"Rss parsing error")
+        logger.error(f"RSS parsing error for {rss_source.url}: {feed.bozo_exception}")
     else:
-        logger.info(f"[{rss_source.url} -> {rss_source.target}]:  Requesting for new messages...")
-        entries = reversed(feed.entries) if reverse else feed.entries
+        logger.info(f"[{rss_source.url} -> {rss_source.target}]:  cheking for updates...")
 
+        entries = list(reversed(feed.entries)) if reverse else feed.entries
         last_identifier = rss_source.last_identifier
-        skip_post = True if last_identifier else False     
 
-        count = 0
-        for entry in entries:
-            if skip_post:
-                if last_identifier == entry.link:
-                    skip_post = False
-                continue
+        if last_identifier:
+            entries = list(dropwhile(lambda e: e.link != last_identifier, entries))
+            if entries: entries.pop(0)
+
+        for count, entry in enumerate(entries):
             if count >= rss_source.limit:
                 break
-
-            count   = count + 1
             yield entry
 
 async def post_new_rss_messages(client: TelegramClient, rss_source_id: int, reverse: bool=True):
@@ -39,47 +72,49 @@ async def post_new_rss_messages(client: TelegramClient, rss_source_id: int, reve
 
     if new_identifier:
         await RssSources.update_last_identifier(rss_source_id, new_identifier)
-        logger.info(f"New rss messages posted")
+        logger.info(f"Source {rss_source_id}: New messages posted")
     else:
-        logger.info("No new rss messages found")
+        logger.info(f"Source {rss_source_id}: No new messages")
    
 
 async def send_message_to_tg(client: TelegramClient, rss_source_id: int, post: feedparser.FeedParserDict):
     rss_source = RssSources.rss[rss_source_id]
-    post_text = f"**{post.title}**\n\n{post.description}"
 
     tags = []
-    if 'tags' in post:
-        for tag in post.tags:
-            tags.append(f"#{tag.term.strip().replace(['-', ' '],'')}")
+    for tag in getattr(post, 'tags', []):
+        clean_tag = re.sub(r'[-\s]+', '', tag.term)
+        tags.append(f"#{clean_tag}")
 
-    message = make_text_message(rss_source_id, post_text, tags)
-    enclosures = []
-    if 'enclosures' in post:
-        for enclosure in post.enclosures:
-            enclosures.append(enclosure.href)
+    caption = make_text_message(
+        rss_source, 
+        title=post.get('title', ''),  # type: ignore
+        body=post.get('description', ''),  # type: ignore
+        tags=tags
+    )
 
-    if enclosures == []:
-        await client.send_message(rss_source.target, message)
-    elif len(enclosures) == 1:
-        await client.send_file(rss_source.target, enclosures[0], caption=message)
+    enclosures = [e.href for e in getattr(post, 'enclosures', [])]
+
+    if not enclosures:
+        await client.send_message(rss_source.target, caption, parse_mode='md')
     else:
-        await client.send_file(rss_source.target, enclosures, caption=message)    
+        #telethon плохо работает со ссылками на файлы в интернете, поэтому скачиваем в память 
+        prepared_files = enclosures[0] \
+            if len(enclosures) == 1 \
+            else await prepare_media_from_urls(enclosures)
+        
+        await client.send_file(rss_source.target, prepared_files, caption=caption, parse_mode='md')
 
-def make_text_message(rss_source_id: int, post_text: str, tags: list=[], max_len: int=1024)->str:
-    rss_source = RssSources.rss[rss_source_id]
-
+def make_text_message(rss_source, title: str, body: str, tags: list, max_len: int = 1024) -> str:
     header = f"{rss_source.header}" if rss_source.header else ""
-    footer = f"\n{rss_source.footer}" if rss_source.footer else ""
-
-    message = f"{header}{post_text}"
-    message = f"{message}\n{' '.join(tags)}" if len(tags) > 0 else message
-    message = f"{message}\n\n{footer}"
-
-    len_penalty = max_len - len(message)
-    if len_penalty < 0:
-        message = make_text_message(rss_source_id, post_text[:len_penalty], tags)
-
-    return message
+    footer = f"\n\n{rss_source.footer}" if rss_source.footer else ""
+    tags_str = f"\n{' '.join(tags)}" if tags else ""
+    
+    # Считаем доступное место для основного текста
+    service_info_len = len(header) + len(footer) + len(tags_str) + 10 # 10 запас
+    max_body_len = max_len - service_info_len - len(title)
+    
+    clean_body = body[:max_body_len] + "..." if len(body) > max_body_len else body
+    
+    return f"{header}**{title}**\n\n{clean_body}{tags_str}{footer}"
 
 
