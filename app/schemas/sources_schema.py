@@ -9,6 +9,8 @@ class SourceSchema(BaseModel):
     allowed: list[str] = Field(default_factory=list) 
     forbidden: list[str] = Field(default_factory=list) 
 
+    ai_prompt: str = Field("")
+
     cron: str = Field("*/60 * * * *")
     last_message_id: int = Field(0)
 

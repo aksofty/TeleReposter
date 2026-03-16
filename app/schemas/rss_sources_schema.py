@@ -3,6 +3,7 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 class RssSourceSchema(BaseModel):
     url: HttpUrl
     target: str
+    ai_prompt: str = Field("")
 
     header: str = Field("")
     footer: str = Field("")

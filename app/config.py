@@ -11,6 +11,9 @@ class Config:
     DB_RSS_SOURCES_FILE = os.getenv("DB_RSS_SOURCES_FILE", "app/data/db_rss_sources.json")
     LOG_FILE = os.getenv("LOG_FILE", "app/logs/all_logs.log")
 
+    GEN_API_KEY=os.getenv("GEN_API_KEY", "")
+    GEN_API_MODEL=os.getenv("GEN_API_MODEL", "")
+
     @classmethod
     def validate(cls):
         if not cls.CLIENT_TOKEN or int(cls.CLIENT_ID)==0:

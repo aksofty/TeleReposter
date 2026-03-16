@@ -6,9 +6,11 @@ import feedparser
 import httpx
 from loguru import logger
 from telethon import TelegramClient
+from utils.gen_api_utils import gen_api_send
 from db.rss_sources import RssSources
 
 async def prepare_media_from_urls(urls, max_size_mb=5):
+    # 5mb x 10 (максимальное количество прикрепленных файлов) = 50 mb памяти
     # Переводим МБ в байты
     MAX_SIZE = max_size_mb * 1024 * 1024
     media_list = []
@@ -39,8 +41,6 @@ async def prepare_media_from_urls(urls, max_size_mb=5):
                 
     return media_list
 
-
-
 def get_new_rss_messages(rss_source_id: int, reverse: bool=True):
     rss_source = RssSources.rss[rss_source_id]
     rss_url = str(rss_source.url)
@@ -63,21 +63,47 @@ def get_new_rss_messages(rss_source_id: int, reverse: bool=True):
                 break
             yield entry
 
-async def post_new_rss_messages(client: TelegramClient, rss_source_id: int, reverse: bool=True):
-    new_identifier = None
+async def post_new_rss_messages(
+        client: TelegramClient, 
+        rss_source_id: int, 
+        gen_api_token: str="", 
+        gen_api_model: str="", 
+        reverse: bool=True
+    ):
 
-    for post in get_new_rss_messages(rss_source_id, reverse):
-        await send_message_to_tg(client, rss_source_id, post)
+    new_identifier = None
+    rss_source = RssSources.rss[rss_source_id]
+
+    new_posts = get_new_rss_messages(rss_source_id, reverse)
+    if not new_posts:
+        logger.info(f"Source {rss_source_id}: No new messages")
+        return
+
+    for post in new_posts:
+        if rss_source.ai_prompt:
+            post_text = f"{post.get('title', '')} {post.get('description', '')}"
+            response_content = await gen_api_send(
+                post_text, 
+                rss_source.ai_prompt, 
+                gen_api_token, 
+                gen_api_model
+            )
+            if response_content in (None, "Fail"):
+                logger.error(f"Message was NOT moderated by AI.")
+                return
+            
+            logger.info(f"Message was moderated by AI and sent to {rss_source.target}")
+
+        await send_message_to_tg(client, rss_source_id, post, response_content)
         new_identifier = str(post.link)
 
     if new_identifier:
         await RssSources.update_last_identifier(rss_source_id, new_identifier)
         logger.info(f"Source {rss_source_id}: New messages posted")
-    else:
-        logger.info(f"Source {rss_source_id}: No new messages")
+    
    
 
-async def send_message_to_tg(client: TelegramClient, rss_source_id: int, post: feedparser.FeedParserDict):
+async def send_message_to_tg(client: TelegramClient, rss_source_id: int, post: feedparser.FeedParserDict, ai_text: str|None=None):
     rss_source = RssSources.rss[rss_source_id]
 
     tags = []
@@ -85,19 +111,22 @@ async def send_message_to_tg(client: TelegramClient, rss_source_id: int, post: f
         clean_tag = re.sub(r'[-\s]+', '', tag.term)
         tags.append(f"#{clean_tag}")
 
-    caption = make_text_message(
-        rss_source, 
-        title=post.get('title', ''),  # type: ignore
-        body=post.get('description', ''),  # type: ignore
-        tags=tags
-    )
+    if ai_text is None:
+        caption = make_text_message(
+            rss_source, 
+            title=post.get('title', ''),  # type: ignore
+            body=post.get('description', ''),  # type: ignore
+            tags=tags
+        )
+    else:
+        caption = ai_text
 
     enclosures = [e.href for e in getattr(post, 'enclosures', [])]
 
     if not enclosures:
         await client.send_message(rss_source.target, caption, parse_mode='md')
     else:
-        #telethon плохо работает со ссылками на файлы в интернете, поэтому скачиваем в память 
+        #telethon плохо работает со списком ссылок на файлы в интернете, поэтому скачиваем в память если файл не один 
         prepared_files = enclosures[0] \
             if len(enclosures) == 1 \
             else await prepare_media_from_urls(enclosures)

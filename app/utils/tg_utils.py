@@ -1,7 +1,9 @@
+import json
 from typing import Set
 
 import qrcode
 from telethon import TelegramClient
+from utils.gen_api_utils import gen_api_send
 from db.sources import Sources
 from schemas.message_schema import MessageSchema
 from schemas.sources_schema import SourceSchema
@@ -29,10 +31,9 @@ async def get_message_group(client: TelegramClient, source: str, first_id: int, 
 
 
 @logger.catch
-async def repost_validated_messages(client: TelegramClient, source_id: int):
+async def repost_validated_messages(client: TelegramClient, source_id: int, gen_api_token: str="", gen_api_model: str=""):
     """Репостит сообщения, которые прошли валидацию"""
     source = Sources.items[source_id]
-    processed_groups: Set[int] = set()
     found_any = False
 
     logger.info(f"[{source.source} -> {source.target}]:  Requesting for new messages...")
@@ -60,8 +61,19 @@ async def repost_validated_messages(client: TelegramClient, source_id: int):
                         
                 logger.info(f"Found {len(message_ids)} messages in group {message.grouped_id}")
 
-            # пересылаем сообщение(я)
-            await forward_and_update(client, message_ids, source_id)
+            if not source.ai_prompt:
+                await forward_and_update(client, message_ids, source_id)
+                return
+            
+            response_content = await gen_api_send(message.text, source.ai_prompt, gen_api_token, gen_api_model)
+            
+            if response_content in (None, "Fail"):
+                logger.error(f"Message {message_ids} was NOT moderated by AI.")
+                return
+            
+            await client.send_message(source.target, response_content, link_preview=False)
+            logger.info(f"Message {message_ids} was moderated by AI and sent to {source.target}")
+   
         else:
             logger.info(f"The message #{message.id} did not validate")
 

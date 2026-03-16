@@ -37,7 +37,12 @@ async def main():
         scheduler.add_job(
             repost_validated_messages, 
             trigger=CronTrigger.from_crontab(source.cron),
-            args = [client, source_id],
+            args = [
+                client, 
+                source_id, 
+                str(Config.GEN_API_KEY), 
+                str(Config.GEN_API_MODEL)
+            ],
             id=job_id,
             replace_existing=True
         )          
@@ -48,11 +53,16 @@ async def main():
         scheduler.add_job(
             post_new_rss_messages, 
             trigger=CronTrigger.from_crontab(rss_source.cron),
-            args = [client, source_id],
+            args = [
+                client, 
+                source_id,
+                str(Config.GEN_API_KEY), 
+                str(Config.GEN_API_MODEL)
+            ],
             id=job_id,
             replace_existing=True
         )          
-        logger.debug(f"Job rss {job_id} scheduled with cron {source.cron}")
+        logger.debug(f"Job rss {job_id} scheduled with cron {rss_source.cron}")
         
     scheduler.start()
     logger.info(f"Scheduler started")
