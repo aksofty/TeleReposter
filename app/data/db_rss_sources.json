@@ -9,9 +9,9 @@
             "limit": 1,
             "allowed": [],
             "forbidden": [],
-            "cron": "* * * * *",
+            "cron": "* */2 * * *",
             "reverse": true,
-            "last_identifier": "https://www.airlines-inform.ru/news/#Ekaterinburg-Baku-2026"
+            "last_identifier": "https://www.airlines-inform.ru/news/#Tashkent-Samara-2026"
         }
     ]
 }
