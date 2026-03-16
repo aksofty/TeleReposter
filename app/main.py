@@ -33,6 +33,9 @@ async def main():
     scheduler = AsyncIOScheduler()
 
     for source_id, source in enumerate(Sources.items):
+        if not source.active:
+            continue
+
         job_id = f"repost_{source_id}"
         scheduler.add_job(
             repost_validated_messages, 
@@ -49,6 +52,9 @@ async def main():
         logger.debug(f"Job {job_id} scheduled with cron {source.cron}")
 
     for source_id, rss_source in enumerate(RssSources.rss):
+        if not rss_source.active:
+            continue
+
         job_id = f"repost_rss_{source_id}"
         scheduler.add_job(
             post_new_rss_messages, 

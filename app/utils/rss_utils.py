@@ -70,16 +70,12 @@ async def post_new_rss_messages(
         gen_api_model: str="", 
         reverse: bool=True
     ):
-
+    found_any = False
     new_identifier = None
     rss_source = RssSources.rss[rss_source_id]
 
-    new_posts = get_new_rss_messages(rss_source_id, reverse)
-    if not new_posts:
-        logger.info(f"Source {rss_source_id}: No new messages")
-        return
+    for post in get_new_rss_messages(rss_source_id, reverse):
 
-    for post in new_posts:
         if rss_source.ai_prompt:
             post_text = f"{post.get('title', '')} {post.get('description', '')}"
             response_content = await gen_api_send(
@@ -100,6 +96,8 @@ async def post_new_rss_messages(
     if new_identifier:
         await RssSources.update_last_identifier(rss_source_id, new_identifier)
         logger.info(f"Source {rss_source_id}: New messages posted")
+    else:
+        logger.info(f"Source {rss_source_id}: No new messages")
     
    
 

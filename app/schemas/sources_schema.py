@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 class SourceSchema(BaseModel):
+    active: bool = Field(True)
     source: str
     target: str
 

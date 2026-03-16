@@ -59,6 +59,7 @@ docs/_build/
 Thumbs.db
 
 # others
+_FILES
 db_rss_sources.json
 db_sources.json
 db_sources_test.json
