@@ -101,8 +101,11 @@ async def tg_auth_qr(client: TelegramClient):
 
     while True:
         qr_login = await client.qr_login()
+
         # Вывод QR прямо в консоль
-        qrcode.QRCode(border=1).add_data(qr_login.url).print_ascii()
+        qr = qrcode.QRCode()
+        qr.add_data(qr_login.url)
+        qr.print_ascii()
         
         try:
             await qr_login.wait(timeout=60)

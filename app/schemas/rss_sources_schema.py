@@ -1,38 +1,19 @@
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl
+from schemas.base_source_schema import BaseSourceSchema
 
-class RssSourceSchema(BaseModel):
-    active: bool = Field(True)
-    url: HttpUrl
-    target: str
-    ai_prompt: str = Field("")
-
-    header: str = Field("")
-    footer: str = Field("")
-
-    limit: int = Field(default=5, ge=1, le=100)
+class RssSourceSchema(BaseSourceSchema):
     
-    allowed: list[str] = Field(default_factory=list) 
-    forbidden: list[str] = Field(default_factory=list) 
-
-    cron: str = Field("*/60 * * * *")
-
     reverse: bool = Field(True)
 
-    last_identifier: str = Field("")
-
-
-    model_config = ConfigDict(
-        from_attributes=True, 
-        str_strip_whitespace=True,
-        extra='ignore'
+    source: HttpUrl = Field(
+        validation_alias='url',
+        serialization_alias='url'
     )
 
-    @field_validator("allowed", "forbidden", mode="before")
-    @classmethod
-    def split_strings(cls,v):
-        if isinstance(v, str):
-            return [item.strip().lower() for item in v.split(",") if item.strip()]
-        return v
+    last_message_id: str = Field(
+        validation_alias='last_identifier',
+        serialization_alias='last_identifier'
+    )
 
 class RssSourceListSchema(BaseModel):
     rss: list[RssSourceSchema]

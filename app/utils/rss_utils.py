@@ -43,16 +43,16 @@ async def prepare_media_from_urls(urls, max_size_mb=5):
 
 def get_new_rss_messages(rss_source_id: int, reverse: bool=True):
     rss_source = RssSources.rss[rss_source_id]
-    rss_url = str(rss_source.url)
+    rss_url = str(rss_source.source)
     feed = feedparser.parse(rss_url)
 
     if feed.bozo:
-        logger.error(f"RSS parsing error for {rss_source.url}: {feed.bozo_exception}")
+        logger.error(f"RSS parsing error for {rss_source.source}: {feed.bozo_exception}")
     else:
-        logger.info(f"[{rss_source.url} -> {rss_source.target}]:  cheking for updates...")
+        logger.info(f"[{rss_source.source} -> {rss_source.target}]:  cheking for updates...")
 
         entries = list(reversed(feed.entries)) if reverse else feed.entries
-        last_identifier = rss_source.last_identifier
+        last_identifier = rss_source.last_message_id
 
         if last_identifier:
             entries = list(dropwhile(lambda e: e.link != last_identifier, entries))
@@ -70,11 +70,12 @@ async def post_new_rss_messages(
         gen_api_model: str="", 
         reverse: bool=True
     ):
-    found_any = False
+
     new_identifier = None
     rss_source = RssSources.rss[rss_source_id]
 
     for post in get_new_rss_messages(rss_source_id, reverse):
+        response_content = None
 
         if rss_source.ai_prompt:
             post_text = f"{post.get('title', '')} {post.get('description', '')}"

@@ -1,6 +1,4 @@
 import json
-import time
-
 from loguru import logger
 from schemas.sources_schema import SourceListSchema, SourceSchema
 
