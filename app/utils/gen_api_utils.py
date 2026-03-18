@@ -5,7 +5,13 @@ import json
 import httpx
 from loguru import logger
 
-async def gen_api_send(message: str, prompt: str, token: str, model: str="gemini-2-5-flash", time_out: float=15.0):
+async def gen_api_send(
+          message: str, 
+          prompt: str, 
+          token: str, 
+          model: str="gemini-2-5-flash", 
+          time_out: float=15.0
+):
     
     if not all(f.strip() for f in [message, prompt, token]):
          return None

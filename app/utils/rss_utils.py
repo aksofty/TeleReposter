@@ -102,7 +102,13 @@ async def post_new_rss_messages(
     
    
 
-async def send_message_to_tg(client: TelegramClient, rss_source_id: int, post: feedparser.FeedParserDict, ai_text: str|None=None):
+async def send_message_to_tg(
+    client: TelegramClient, 
+    rss_source_id: int, 
+    post: feedparser.FeedParserDict, 
+    ai_text: str|None=None
+):
+
     rss_source = RssSources.rss[rss_source_id]
 
     tags = []
@@ -132,7 +138,14 @@ async def send_message_to_tg(client: TelegramClient, rss_source_id: int, post: f
         
         await client.send_file(rss_source.target, prepared_files, caption=caption, parse_mode='md')
 
-def make_text_message(rss_source, title: str, body: str, tags: list, max_len: int = 1024) -> str:
+def make_text_message(
+        rss_source, 
+        title: str, 
+        body: str, 
+        tags: list, 
+        max_len: int = 1024
+) -> str:
+    
     header = f"{rss_source.header}" if rss_source.header else ""
     footer = f"\n\n{rss_source.footer}" if rss_source.footer else ""
     tags_str = f"\n{' '.join(tags)}" if tags else ""

@@ -27,7 +27,7 @@ async def main():
     )
 
     await client.connect() 
-    await tg_auth_qr(client)
+    await tg_auth_qr(client, True)
     logger.info(f"Logged in to Telegram!")
 
     scheduler = AsyncIOScheduler()

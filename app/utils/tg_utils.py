@@ -31,7 +31,12 @@ async def get_message_group(client: TelegramClient, source: str, first_id: int, 
 
 
 @logger.catch
-async def repost_validated_messages(client: TelegramClient, source_id: int, gen_api_token: str="", gen_api_model: str=""):
+async def repost_validated_messages(
+    client: TelegramClient, 
+    source_id: int, 
+    gen_api_token: str="", 
+    gen_api_model: str=""
+):
     """Репостит сообщения, которые прошли валидацию"""
     source = Sources.items[source_id]
     found_any = False
@@ -94,7 +99,7 @@ async def forward_and_update(client: TelegramClient, message_ids: list[int], sou
      logger.info(f"Messages {message_ids} forwarded.")
 
 
-async def tg_auth_qr(client: TelegramClient):
+async def tg_auth_qr(client: TelegramClient, one_try: bool=False):
     """Авторизация через QR-код с обработкой перегенерации."""
     if await client.is_user_authorized():
         return
@@ -111,5 +116,8 @@ async def tg_auth_qr(client: TelegramClient):
             await qr_login.wait(timeout=60)
             break
         except Exception:
+            if one_try:
+                logger.warning("QR code expired or login failed. Session must be updated!")
+                exit(1)        
             logger.warning("QR code expired or login failed. Regenerating...")
             continue
