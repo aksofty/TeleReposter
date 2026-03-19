@@ -5,6 +5,7 @@ from schemas.base_source_schema import BaseSourceSchema
 class SourceSchema(BaseSourceSchema):
     source: AtStr
     drop_author: bool = Field(False)
+    repost: bool = Field(True)
 
 
 class SourceListSchema(BaseModel):

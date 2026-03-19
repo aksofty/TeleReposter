@@ -7,8 +7,7 @@ from config import Config
 from db.sources import Sources
 from db.rss_sources import RssSources
 from schemas.sources_schema import SourceSchema
-from utils.rss_utils import post_new_rss_messages
-from utils.tg_utils import repost_validated_messages, tg_auth_qr
+from utils.tg_utils import repost_validated_messages, post_new_rss_messages_to_tg, tg_auth_qr
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
@@ -18,7 +17,7 @@ logger.add(lambda msg: print(msg, end=""), level="DEBUG")
 logger.add(Config.LOG_FILE, rotation="1 MB")
 
 async def main():
-    logger.info(f"Starting app at {datetime.now()}")
+    logger.info(f"Стартуем {datetime.now()}")
     
     client = TelegramClient(
         Config.SESSION_NAME,
@@ -28,7 +27,7 @@ async def main():
 
     await client.connect() 
     await tg_auth_qr(client, True)
-    logger.info(f"Logged in to Telegram!")
+    logger.info(f"Авторизация в Телеграм прошла успешно!")
 
     scheduler = AsyncIOScheduler()
 
@@ -49,7 +48,7 @@ async def main():
             id=job_id,
             replace_existing=True
         )          
-        logger.debug(f"Job {job_id} scheduled with cron {source.cron}")
+        logger.debug(f"Обработчик {job_id} добавлен в расписание cron: {source.cron}")
 
     for source_id, rss_source in enumerate(RssSources.rss):
         if not rss_source.active:
@@ -57,7 +56,7 @@ async def main():
 
         job_id = f"repost_rss_{source_id}"
         scheduler.add_job(
-            post_new_rss_messages, 
+            post_new_rss_messages_to_tg, 
             trigger=CronTrigger.from_crontab(rss_source.cron),
             args = [
                 client, 
@@ -68,19 +67,19 @@ async def main():
             id=job_id,
             replace_existing=True
         )          
-        logger.debug(f"Job rss {job_id} scheduled with cron {rss_source.cron}")
+        logger.debug(f"Обработчик {job_id} добавлен в расписание cron: {rss_source.cron}")
         
     scheduler.start()
-    logger.info(f"Scheduler started")
+    logger.info(f"Все обработчики добавлены в расписание")
 
     try:
         await client.run_until_disconnected() # type: ignore
     except (KeyboardInterrupt, SystemExit):
-        logger.warning("Shutdown signal received")
+        logger.warning("Получен сигнал остановки")
     finally:
         scheduler.shutdown()
         await client.disconnect() # type: ignore
-        logger.info("Service stopped")
+        logger.info("Сервис остановлен!")
 
 if __name__ == '__main__':
     try:

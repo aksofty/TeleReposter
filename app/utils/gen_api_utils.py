@@ -32,7 +32,7 @@ async def gen_api_send(
         ]
     }
 
-    logger.info(f"Sending request to model: {model} | Message snippet: {message[:50]}...")
+    logger.info(f"Отправляю на обработку в {model} сообщение: {message[:30]}...")
 
     response_content = None
 
@@ -43,7 +43,7 @@ async def gen_api_send(
             
             # Проверка на HTTP ошибки (4xx, 5xx)
             response.raise_for_status()
-            logger.success(f"Response received from {model} successfully")
+            logger.success(f"Ответ от {model} успешно получен")
 
             msg_data = response.json()['response'][0]['message'] # type: ignore
             response_content = msg_data.get('content') or ""
@@ -56,8 +56,8 @@ async def gen_api_send(
         logger.error(f"API Error: {exc.response.status_code} - {exc.response.text}")
         return None
     except httpx.TimeoutException:
-        logger.error(f"Request timed out for model: {model}")
+        logger.error(f"Не дождались ответа от {model} [time-out]")
         return None
     except Exception as e:
-        logger.exception(f"Unexpected error during request: {e}")
+        logger.exception(f"Ошибка: {e}")
         return None
