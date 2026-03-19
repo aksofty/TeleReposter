@@ -2,7 +2,7 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 from schemas.base_source_schema import BaseSourceSchema
 
 class RssSourceSchema(BaseSourceSchema):
-    
+
     reverse: bool = Field(True)
 
     source: HttpUrl = Field(
@@ -16,7 +16,7 @@ class RssSourceSchema(BaseSourceSchema):
     )
 
 class RssSourceListSchema(BaseModel):
-    rss: list[RssSourceSchema]
+    sources: list[RssSourceSchema]
 
     model_config = ConfigDict(
         from_attributes=True, 

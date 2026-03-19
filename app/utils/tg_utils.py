@@ -35,7 +35,7 @@ async def get_all_messages_from_group(client: TelegramClient, source: str, first
 
 
 @logger.catch
-async def repost_validated_messages(
+async def post_validated_messages(
     client: TelegramClient, source_id: int, gen_api_token: str="", gen_api_model: str=""):
     """Репостит сообщения, которые прошли валидацию"""
 
@@ -76,7 +76,7 @@ async def repost_validated_messages(
                         
                 logger.info(f"Найдено {len(message_ids)} сообщений в группе №{message.grouped_id}")
             
-            # Делаем простой репост (даже если указан промпт)
+            # Делаем простой репост (даже если указан промптпше)
             if source.repost:
                 posted_count +=1
                 await forward_message(client, message_ids, source)
@@ -159,7 +159,7 @@ async def send_message_to_tg(
         
         await client.send_file(rss_source.target, prepared_files, caption=caption, parse_mode='md')
 
-async def post_new_rss_messages_to_tg(
+async def post_validated_rss_messages(
         client: TelegramClient, 
         rss_source_id: int, 
         gen_api_token: str="", 
@@ -168,7 +168,7 @@ async def post_new_rss_messages_to_tg(
     ):
 
     new_identifier = None
-    rss_source = RssSources.rss[rss_source_id]
+    rss_source = RssSources.items[rss_source_id]
 
     for post in get_new_rss_messages(rss_source_id, reverse):
         response_content = None
@@ -182,19 +182,19 @@ async def post_new_rss_messages_to_tg(
                 gen_api_model
             )
             if response_content in (None, "Fail"):
-                logger.error(f"Message was NOT moderated by AI.")
+                logger.error(f"Сообщение не прошло модерацию ИИ")
                 return
             
-            logger.info(f"Message was moderated by AI and sent to {rss_source.target}")
+            logger.info(f"Сообщение прошло обработку ИИ и было опубликовано {rss_source.target}")
 
         await send_message_to_tg(client, rss_source, post, response_content)
         new_identifier = str(post.link)
 
     if new_identifier:
         await RssSources.update_last_identifier(rss_source_id, new_identifier)
-        logger.info(f"Source {rss_source_id}: New messages posted")
+        logger.info(f"RSS {rss_source_id}: Новые сообщения опубликованы")
     else:
-        logger.info(f"Source {rss_source_id}: No new messages")
+        logger.info(f"RSS {rss_source_id}: Новых сообщений нет")
 
 def make_text_message(
         rss_source, 

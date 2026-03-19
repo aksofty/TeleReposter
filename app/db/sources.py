@@ -14,7 +14,7 @@ class Sources():
                 data = json.load(f)
                 cls.items = SourceListSchema(**data).sources
         except FileNotFoundError as e:
-            logger.info(f"Error Source Init: {e}")
+            logger.info(f"Ошибка загрузки файла источников: {e}")
             exit(1)
         
     @classmethod
@@ -24,7 +24,7 @@ class Sources():
             with open(cls.json_file, "w", encoding="utf-8") as f:
                 f.write(source_list.model_dump_json(indent=4))
         except ValueError as e:
-            logger.info(f"Commit error: {e}")
+            logger.info(f"Ошибка сохранения источника: {e}")
 
     @classmethod
     async def update_last_message_id(cls, source_id: int, message_id: int = 0):
@@ -33,8 +33,8 @@ class Sources():
             if last_id < message_id:
                 cls.items[source_id].last_message_id = message_id
                 cls.commit()
-                logger.info(f"Last ID updated to {message_id}")
+                logger.info(f"Обновлен last_id у сообщения №{message_id}")
             else:
-                logger.info(f"Last ID is already higher [current: {last_id}]")
+                logger.info(f"last_id уже больше [текущий: {last_id}]")
         except ValueError as e:
-            logger.info(f"Update source error: {e}")
+            logger.info(f"Ошибка обновления источника: {e}")

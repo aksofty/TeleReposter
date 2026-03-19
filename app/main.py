@@ -1,18 +1,16 @@
 import asyncio
 from datetime import datetime
-import sys
 from loguru import logger
 from telethon import TelegramClient
 from config import Config
 from db.sources import Sources
 from db.rss_sources import RssSources
 from schemas.sources_schema import SourceSchema
-from utils.tg_utils import repost_validated_messages, post_new_rss_messages_to_tg, tg_auth_qr
+from utils.scheduler_utils import setup_jobs
+from utils.tg_utils import post_validated_messages, post_validated_rss_messages, tg_auth_qr
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
 
 logger.remove()
-#logger.add(sys.stderr, level="DEBUG", colorize=True)
 logger.add(lambda msg: print(msg, end=""), level="DEBUG")
 logger.add(Config.LOG_FILE, rotation="1 MB")
 
@@ -20,10 +18,7 @@ async def main():
     logger.info(f"Стартуем {datetime.now()}")
     
     client = TelegramClient(
-        Config.SESSION_NAME,
-        int(Config.CLIENT_ID),
-        str(Config.CLIENT_TOKEN)
-    )
+        Config.SESSION_NAME, int(Config.CLIENT_ID), str(Config.CLIENT_TOKEN))
 
     await client.connect() 
     await tg_auth_qr(client, True)
@@ -31,44 +26,14 @@ async def main():
 
     scheduler = AsyncIOScheduler()
 
-    for source_id, source in enumerate(Sources.items):
-        if not source.active:
-            continue
-
-        job_id = f"repost_{source_id}"
-        scheduler.add_job(
-            repost_validated_messages, 
-            trigger=CronTrigger.from_crontab(source.cron),
-            args = [
-                client, 
-                source_id, 
-                str(Config.GEN_API_KEY), 
-                str(Config.GEN_API_MODEL)
-            ],
-            id=job_id,
-            replace_existing=True
-        )          
-        logger.debug(f"Обработчик {job_id} добавлен в расписание cron: {source.cron}")
-
-    for source_id, rss_source in enumerate(RssSources.rss):
-        if not rss_source.active:
-            continue
-
-        job_id = f"repost_rss_{source_id}"
-        scheduler.add_job(
-            post_new_rss_messages_to_tg, 
-            trigger=CronTrigger.from_crontab(rss_source.cron),
-            args = [
-                client, 
-                source_id,
-                str(Config.GEN_API_KEY), 
-                str(Config.GEN_API_MODEL)
-            ],
-            id=job_id,
-            replace_existing=True
-        )          
-        logger.debug(f"Обработчик {job_id} добавлен в расписание cron: {rss_source.cron}")
-        
+    setup_jobs(
+        scheduler, Sources.items, post_validated_messages, 
+        "tg->tg", client, Config.GEN_API_KEY, Config.GEN_API_MODEL
+    )
+    setup_jobs(
+        scheduler, RssSources.items, post_validated_rss_messages, 
+        "rss->tg", client, Config.GEN_API_KEY, Config.GEN_API_MODEL
+    )   
     scheduler.start()
     logger.info(f"Все обработчики добавлены в расписание")
 

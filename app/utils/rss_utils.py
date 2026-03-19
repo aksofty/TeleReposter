@@ -40,7 +40,7 @@ async def prepare_media_from_urls(urls, max_size_mb=5):
     return media_list
 
 def get_new_rss_messages(rss_source_id: int, reverse: bool=True):
-    rss_source = RssSources.rss[rss_source_id]
+    rss_source = RssSources.items[rss_source_id]
     rss_url = str(rss_source.source)
     feed = feedparser.parse(rss_url)
 
