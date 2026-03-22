@@ -63,6 +63,9 @@ _FILES
 db_rss_sources.json
 db_sources.json
 db_sources_test.json
+db.sqlite3
 db_rss.json
 test.py
 *.log
+*.sqlite3
+*.db
