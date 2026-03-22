@@ -2,10 +2,8 @@ import io
 import httpx
 from loguru import logger
 
-
 def is_valid_content(
-        text: str, allowed_str: str|None, forbidden_str: str|None) -> bool:
-    
+        text: str, allowed_str: str|None, forbidden_str: str|None) -> bool: 
     if not text:
         return False
     

@@ -2,8 +2,6 @@ import asyncio
 from datetime import datetime
 from loguru import logger
 from telethon import TelegramClient
-from models.source_rss import SourceRss
-from models.source import Source
 from config import Config
 from utils.scheduler_utils import setup_rss_jobs, setup_tg_jobs
 from utils.tg_utils import tg_auth_qr

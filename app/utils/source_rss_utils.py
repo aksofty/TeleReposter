@@ -4,12 +4,12 @@ import re
 import feedparser
 from loguru import logger
 from telethon import TelegramClient
-from utils.common_utils import is_valid_content, prepare_media_from_urls
-from models.source_rss import SourceRss
+from utils.source_utils import is_valid_source_content
+from utils.common_utils import prepare_media_from_urls
+from utils.gen_api_utils import gen_api_send
 from models.source import Source
 from cruds.source_rss import try_rss_type, update_rss_source_last_post_url
 from cruds.source import get_source
-from utils.gen_api_utils import gen_api_send
 from sqlalchemy.ext.asyncio import AsyncSession
 
 async def publish_rss_posts_on_telegram(
@@ -27,31 +27,18 @@ async def publish_rss_posts_on_telegram(
             await update_rss_source_last_post_url(session, rss_source, new_last_post_url) 
 
             post_text = f"{post.get('title', '')} {post.get('description', '')}"
-
-            allowed_str = rss_source.allowed_filter.keywords\
-                if rss_source.allowed_filter else None
-            forbidden_str = rss_source.forbidden_filter.keywords \
-                if rss_source.forbidden_filter else None
-            
-            if not is_valid_content(
-                post_text, allowed_str, forbidden_str):
-                new_last_post_url = None
-                logger.error(f"Сообщение не прошло проверку по фильтрам")
+            if(not is_valid_source_content(rss_source, post_text)):
                 continue
             
             response_content = None
             if rss_source.ai_prompt:
                 response_content = await gen_api_send(
-                    post_text, 
-                    rss_source.ai_prompt.prompt, 
-                    gen_api_token, 
-                    gen_api_model
-                )
+                    post_text, rss_source.ai_prompt.prompt, gen_api_token, gen_api_model)
                 if response_content in (None, "Fail"):
                     logger.error(f"Сообщение не прошло модерацию ИИ")
-                    return
-                
-                logger.info(f"Сообщение прошло обработку ИИ и было опубликовано {rss_source.target}")
+                    continue
+
+                logger.info(f"Сообщение прошло обработку ИИ")
 
             await publish_validated_rss_post(client, rss_source, post, response_content)
             any_post = True
@@ -61,19 +48,15 @@ async def publish_rss_posts_on_telegram(
         else:
             logger.info(f"RSS {rss_source.id}: Нет новых сообщений для публикации")
 
+
 async def publish_validated_rss_post(
-        client: TelegramClient, 
-        rss_source: Source, 
-        post: feedparser.FeedParserDict, 
-        ai_text: str|None=None
-    ):
+        client: TelegramClient, rss_source: Source, post: feedparser.FeedParserDict, ai_text: str|None=None):
     try_rss_type(rss_source)
 
     tags = get_tags(post)
 
     caption = make_text_message(
-            rss_source, 
-            title=post.get('title', ''),  # type: ignore
+            rss_source, title=post.get('title', ''),  # type: ignore
             body=post.get('description', ''),  # type: ignore
             tags=tags
         ) if ai_text is None else ai_text
@@ -88,6 +71,7 @@ async def publish_validated_rss_post(
             else await prepare_media_from_urls(enclosures)
         
         await client.send_file(rss_source.target, prepared_files, caption=caption, parse_mode='md')
+
 
 async def get_new_rss_posts(rss_source: Source):
     try_rss_type(rss_source)

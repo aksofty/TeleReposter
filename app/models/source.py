@@ -1,10 +1,8 @@
-from typing import List, Optional
 from sqlalchemy import JSON, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
 
 class Source(Base):
-
     __tablename__ = 'sources'
     
     id: Mapped[int] = mapped_column(primary_key=True)

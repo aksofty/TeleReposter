@@ -4,12 +4,7 @@ import httpx
 from loguru import logger
 
 async def gen_api_send(
-          message: str, 
-          prompt: str, 
-          token: str, 
-          model: str="gemini-2-5-flash", 
-          time_out: float=15.0
-):
+          message: str, prompt: str, token: str, model: str="gemini-2-5-flash", time_out: float=15.0):
     
     if not all(f.strip() for f in [message, prompt, token]):
          return None
@@ -22,7 +17,6 @@ async def gen_api_send(
         'Authorization': f'Bearer {token}'
     }
 
-    # Формируем тело запроса согласно структуре API
     data_input = {
         "is_sync": True,
         "messages": [
@@ -31,11 +25,9 @@ async def gen_api_send(
     }
 
     logger.info(f"Отправляю на обработку в {model} сообщение: {message[:30]}...")
-
     response_content = None
 
     try:
-        # Устанавливаем таймаут 30 секунд для ожидания ответа нейросети
         with httpx.Client(timeout=time_out) as client:
             response = client.post(url_endpoint, json=data_input, headers=headers)
             
@@ -45,11 +37,10 @@ async def gen_api_send(
 
             msg_data = response.json()['response'][0]['message'] # type: ignore
             response_content = msg_data.get('content') or ""
-            #print(f"response: {response_content}")
             return response_content
         
     except (KeyError, IndexError, TypeError):
-            return None
+        return None
     except httpx.HTTPStatusError as exc:
         logger.error(f"API Error: {exc.response.status_code} - {exc.response.text}")
         return None

@@ -7,11 +7,7 @@ from cruds.source import get_source_list
 
 async def setup_rss_jobs(scheduler, client, session, api_key, api_model):
     sources = await get_source_list(
-        session,
-        type="rss",
-        is_active=True, 
-        fields=[Source.id, Source.cron]
-        )
+        session, type="rss", is_active=True, fields=[Source.id, Source.cron])
     
     await setup_jobs(
             scheduler, publish_rss_posts_on_telegram, 
@@ -21,11 +17,7 @@ async def setup_rss_jobs(scheduler, client, session, api_key, api_model):
     
 async def setup_tg_jobs(scheduler, client, session, api_key, api_model):
     sources = await get_source_list(
-        session,
-        type="tg",
-        is_active=True, 
-        fields=[Source.id, Source.cron]
-        )
+        session, type="tg", is_active=True, fields=[Source.id, Source.cron])
     
     await setup_jobs(
             scheduler, post_validated_messages, 
