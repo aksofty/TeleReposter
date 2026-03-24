@@ -9,7 +9,7 @@ class Config:
     SESSION_NAME = os.getenv("SESSION_NAME", "app_session")
 
     DB_NAME=os.getenv("DB_NAME", "db.sqlite3")
-    LOG_FILE = os.getenv("LOG_FILE", "app/logs/all_logs.log")
+    LOG_FILE = os.getenv("LOG_FILE", "all_logs.log")
 
     GEN_API_KEY=os.getenv("GEN_API_KEY", "")
     GEN_API_MODEL=os.getenv("GEN_API_MODEL", "")
