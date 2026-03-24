@@ -37,6 +37,11 @@ async def gen_api_send(
 
             msg_data = response.json()['response'][0]['message'] # type: ignore
             response_content = msg_data.get('content') or ""
+            if response_content in (None, "Fail"):
+                logger.error(f"Сообщение не прошло модерацию ИИ")
+                return None
+            
+            logger.info(f"Сообщение прошло обработку ИИ")
             return response_content
         
     except (KeyError, IndexError, TypeError):

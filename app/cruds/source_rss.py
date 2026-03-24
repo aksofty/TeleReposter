@@ -1,8 +1,8 @@
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
-from models.source import Source
-from models import SourceRss
+from app.models.source import Source
+from app.models.source_rss import SourceRss
 
 def try_rss_type(rss_source: Source):
     if not isinstance(rss_source, SourceRss):

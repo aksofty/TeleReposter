@@ -1,9 +1,9 @@
 from telethon import TelegramClient
-from cruds.source_tg import update_tg_source_last_message_id
-from cruds.source import get_source
-from models.source import Source
-from utils.source_utils import is_valid_source_content
-from utils.gen_api_utils import gen_api_send
+from app.cruds.source_tg import update_tg_source_last_message_id
+from app.cruds.source import get_source
+from app.models.source import Source
+from app.utils.source_utils import is_valid_source_content
+from app.utils.gen_api_utils import gen_api_send
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,34 +34,25 @@ async def get_all_messages_from_group(client: TelegramClient, source: str, first
             yield message 
 
 
-async def post_validated_messages(
+#async def post_validated_messages(
+async def post_handler_tg(
     client: TelegramClient, session: AsyncSession, source_id: int, gen_api_token: str="", gen_api_model: str=""):
     """Репостит сообщения, которые прошли валидацию"""
 
     tg_source = await get_source(session, source_id)
     if tg_source:
-        source = tg_source.source 
-        target = tg_source.target
-        logger.info(f"[{source} -> {target}]: Ищу новые сообщения...")
-
+        logger.info(f"[{tg_source.source} -> {tg_source.target}]: Ищу новые сообщения...")
         found_any = False
         posted_count = 0
+
         async for message in get_messages(client, tg_source, 30):
             if posted_count >= tg_source.limit:
-                logger.info(f"[{source} -> {target}]: Максимальное количество сообщений {tg_source.limit} опубликовано")
+                logger.info(f"[{tg_source.source} -> {tg_source.target}]: Максимальное количество сообщений {tg_source.limit} опубликовано")
                 return
             
-            # обновляем метку последнего сообщения в канале
+            # обновляем метку последнего сообщения в канале в любом случае
             await update_tg_source_last_message_id(session, tg_source, message.id)
             found_any = True
-
-            '''allowed_str = tg_source.allowed_filter.keywords\
-                if tg_source.allowed_filter else None
-            forbidden_str = tg_source.forbidden_filter.keywords \
-                if tg_source.forbidden_filter else None
-
-            if is_valid_content(
-                message.text, allowed_str, forbidden_str):'''
 
             if is_valid_source_content(tg_source, message.text):
                 # добавляем id сообщения в список пересылаемых
@@ -73,51 +64,43 @@ async def post_validated_messages(
                 # если сообщение является частью альбома - ищем все сообщения альбома и добавляем их к списку message_ids
                 if message.grouped_id:
                     logger.info(f"Сообщение №{message.id} - часть группы {message.grouped_id}. Собираю список...")
-                    async for g_message in get_all_messages_from_group(client, source, message.id, message.grouped_id):
-                        if g_message:
-                            await update_tg_source_last_message_id(session, tg_source, g_message.id)
-                            message_ids.append(g_message.id)
-                            if g_message.media:
-                                message_media.append(g_message.media)
+                    async for g_message in get_all_messages_from_group(client, tg_source.source, message.id, message.grouped_id):
+                        await update_tg_source_last_message_id(session, tg_source, g_message.id)
+                        message_ids.append(g_message.id)
+                        if g_message.media:
+                            message_media.append(g_message.media)
                                 
                     logger.info(f"Найдено {len(message_ids)} сообщений в группе №{message.grouped_id}")
                     
-                # Делаем простой репост (даже если указан промптпше)
+                # Делаем простой репост если установлен флаг repost (даже если указан промпт)
                 if tg_source.repost:
                     posted_count +=1
                     await forward_message(client, message_ids, tg_source)
                     continue
                     
-                # Отправляем новое сообщение
                 text_to_send = message.text
-
-                # Обрабатываем с помощью ИИ
                 if tg_source.ai_prompt:
-                    # очищаем медиа для поста отредактированного ИИ
-                    message_media.clear()
-                        
+                    message_media.clear() #если используем ИИ, то фото не пересылаем (пока так)
                     text_to_send = await gen_api_send(
                         message.text, tg_source.ai_prompt.prompt, gen_api_token, gen_api_model)
                         
-                    if text_to_send in (None, "Fail"):
-                        logger.error(f"Сообщение №{message_ids} НЕ ПРОШЛО валидацию ИИ")
-                        posted_count +=1
+                    if text_to_send is None:
                         continue
-                        
-                    logger.info(f"Сообщение №{message_ids} обработано ИИ")
                     
-                if message_media == []:
-                    await client.send_message(target, text_to_send, link_preview=False)
-                else:
-                    await client.send_file(target, message_media, caption=text_to_send)
-
+                await send_message(client, text_to_send, tg_source.target, message_media)
                 posted_count +=1
-                logger.info(f"Сообщение №{message_ids} отправлено в {target}")
-
+    
         if not found_any:  
             logger.info("Новых сообщений нет")
     else:
         logger.error(f"Источник не наден")
+
+async def send_message(client: TelegramClient, text: str, target: str, message_media: list=[]):
+    if message_media == []:
+        await client.send_message(target, text, link_preview=False)
+    else:
+        await client.send_file(target, message_media, caption=text)
+    logger.info(f"Сообщение отправлено в {target}")
 
 
 async def forward_message(client: TelegramClient, message_ids: list[int], tg_source: Source): 

@@ -4,17 +4,17 @@ import re
 import feedparser
 from loguru import logger
 from telethon import TelegramClient
-from utils.source_utils import is_valid_source_content
-from utils.common_utils import prepare_media_from_urls
-from utils.gen_api_utils import gen_api_send
-from models.source import Source
-from cruds.source_rss import try_rss_type, update_rss_source_last_post_url
-from cruds.source import get_source
+from app.utils.source_utils import is_valid_source_content
+from app.utils.common_utils import prepare_media_from_urls
+from app.utils.gen_api_utils import gen_api_send
+from app.models.source import Source
+from app.cruds.source_rss import try_rss_type, update_rss_source_last_post_url
+from app.cruds.source import get_source
 from sqlalchemy.ext.asyncio import AsyncSession
 
-async def publish_rss_posts_on_telegram(
-        client: TelegramClient, session: AsyncSession,
-        source_id: int, gen_api_token: str="", gen_api_model: str=""):
+#async def publish_rss_posts_on_telegram(
+async def post_handler_rss(
+        client: TelegramClient, session: AsyncSession, source_id: int, gen_api_token: str="", gen_api_model: str=""):
     
     rss_source = await get_source(session, source_id)
 
@@ -34,11 +34,8 @@ async def publish_rss_posts_on_telegram(
             if rss_source.ai_prompt:
                 response_content = await gen_api_send(
                     post_text, rss_source.ai_prompt.prompt, gen_api_token, gen_api_model)
-                if response_content in (None, "Fail"):
-                    logger.error(f"Сообщение не прошло модерацию ИИ")
+                if response_content is None:
                     continue
-
-                logger.info(f"Сообщение прошло обработку ИИ")
 
             await publish_validated_rss_post(client, rss_source, post, response_content)
             any_post = True

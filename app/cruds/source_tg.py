@@ -1,8 +1,8 @@
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
-from models.source import Source
-from models import SourceTg
+from app.models.source import Source
+from app.models.source_tg import SourceTg
 
 def try_tg_type(tg_source: Source):
     if not isinstance(tg_source, SourceTg):

@@ -1,6 +1,6 @@
 from loguru import logger
-from utils.common_utils import is_valid_content
-from models.source import Source
+from app.utils.common_utils import is_valid_content
+from app.models.source import Source
 
 
 def is_valid_source_content(source: Source, text: str) -> bool:

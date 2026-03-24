@@ -4,14 +4,17 @@ from loguru import logger
 from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload, with_polymorphic
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.source_rss import SourceRss
-from models.source_tg import SourceTg
-from models.source import Source
+from app.models.source_rss import SourceRss
+from app.models.source_tg import SourceTg
+from app.models.source import Source
 
 async def get_source_list(
-        session: AsyncSession, type: str = "rss", is_active: bool | None = None, fields: list | None = None):
+        session: AsyncSession, source_type: str|None=None, is_active: bool|None = None, fields: list|None = None):
+    
     stmt = select(*fields) if fields else select(Source) 
-    stmt = stmt.where(Source.type == type)
+
+    if source_type is not None:
+        stmt = stmt.where(Source.type == source_type)
 
     if is_active is not None:
         stmt = stmt.where(Source.is_active == is_active)
@@ -28,5 +31,5 @@ async def get_source(session: AsyncSession, id: int):
     entity = with_polymorphic(Source, [SourceRss, SourceTg])
     query = select(entity).where(entity.id == id)
     result = await session.execute(query)
-    
+
     return result.scalar_one_or_none()
