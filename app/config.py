@@ -14,6 +14,10 @@ class Config:
     GEN_API_KEY=os.getenv("GEN_API_KEY", "")
     GEN_API_MODEL=os.getenv("GEN_API_MODEL", "")
 
+    ADMIN_NAME=os.getenv("ADMIN_NAME", "admin")
+    ADMIN_PASS=os.getenv("ADMIN_PASS", "123456")
+    ADMIN_SECRET=os.getenv("ADMIN_SECRET", "my_secret_key")
+
     @classmethod
     def validate(cls):
         if not cls.CLIENT_TOKEN or int(cls.CLIENT_ID)==0:

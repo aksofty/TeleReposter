@@ -14,7 +14,7 @@ services:
   admin:
     build: .
     container_name: telereposter_admin
-    command: python admin.py
+    command: gunicorn --bind 0.0.0.0:8080 admin:app
     volumes:
       - './volumes/data:/app/data'
       - './volumes/logs:/app/logs'
