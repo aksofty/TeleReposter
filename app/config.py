@@ -12,7 +12,6 @@ class Config:
     LOG_FILE = os.getenv("LOG_FILE", "all_logs.log")
 
     GEN_API_KEY=os.getenv("GEN_API_KEY", "")
-    GEN_API_MODEL=os.getenv("GEN_API_MODEL", "")
 
     ADMIN_NAME=os.getenv("ADMIN_NAME", "admin")
     ADMIN_PASS=os.getenv("ADMIN_PASS", "123456")

@@ -29,6 +29,6 @@ async def update_rss_source_last_post_url(
 
     except Exception as e:
         await session.rollback()
-        logger.exception(f"Непредвиденная ошибка при работе с источником ID {rss_source.id}: {str(e)}")
+        logger.exception(f"Непредвиденная ошибка при работе с RSS источником ID {rss_source.id}: {str(e)}")
         raise
   

@@ -82,7 +82,12 @@ async def post_handler_tg(
                 if tg_source.ai_prompt:
                     message_media.clear() #если используем ИИ, то фото не пересылаем (пока так)
                     text_to_send = await gen_api_send(
-                        message.text, tg_source.ai_prompt.prompt, gen_api_token, gen_api_model)
+                        message.text, 
+                        tg_source.ai_prompt.prompt, 
+                        gen_api_token, 
+                        model=tg_source.ai_model.value, 
+                        response_format="text"
+                    )
                         
                     if text_to_send is None:
                         continue

@@ -22,12 +22,12 @@ async def update_tg_source_last_message_id(
         tg_source.last_message_id = new_last_message_id
         await session.commit()
         await session.refresh(tg_source)
-        logger.info(f"Успешно обновлен ID последнего сообщения для RSS-источника '{tg_source.name}' (ID: {tg_source.id})")
+        logger.info(f"Успешно обновлен ID последнего сообщения для источника '{tg_source.name}' (ID: {tg_source.id})")
         return tg_source
 
     except SQLAlchemyError as e:
         await session.rollback()
-        logger.error(f"Ошибка SQLAlchemy при обновлении RSS-источника ID {tg_source.id}: {str(e)}")
+        logger.error(f"Ошибка SQLAlchemy при обновлении источника ID {tg_source.id}: {str(e)}")
         raise 
 
     except Exception as e:

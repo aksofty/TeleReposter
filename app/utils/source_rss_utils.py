@@ -1,5 +1,6 @@
 
 from itertools import dropwhile
+import json
 import re
 import feedparser
 from loguru import logger
@@ -11,6 +12,8 @@ from app.models.source import Source
 from app.cruds.source_rss import try_rss_type, update_rss_source_last_post_url
 from app.cruds.source import get_source
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.utils.parse_utils import get_clean_body_html
 
 #async def publish_rss_posts_on_telegram(
 async def post_handler_rss(
@@ -30,24 +33,48 @@ async def post_handler_rss(
             if(not is_valid_source_content(rss_source, post_text)):
                 continue
             
-            response_content = None
+            response_content = None # переменная для хранения текста статьи преобразованного ИИ
+            parsed_image = None # переменная для изменения(добавления) enclosure статьи
+
             if rss_source.ai_prompt:
-                response_content = await gen_api_send(
-                    post_text, rss_source.ai_prompt.prompt, gen_api_token, gen_api_model)
+                if rss_source.parse_link: # парсим детальную страницу статьи если установлен флаг
+                    html_content = await get_clean_body_html(new_last_post_url)
+
+                    if html_content: # отправляем на обработку ИИ html код страницы статьи
+                        response_json = await gen_api_send(
+                            html_content, 
+                            rss_source.ai_prompt.prompt, 
+                            gen_api_token,
+                            model=str(rss_source.ai_model.value),
+                            response_format="json_object"
+                        )
+
+                        if response_json: # Если получили ответ от ИИ
+                            data = json.loads(response_json)
+                            response_content = data['text'] if data['text'] else None
+                            parsed_image = data['image'] if data['image'] else None
+
+                else: # если не надо парсить - отправляем ИИ текст статьи из rss фида "title + description"
+                    response_content = await gen_api_send(
+                        post_text, 
+                        rss_source.ai_prompt.prompt, 
+                        gen_api_token, 
+                        model=str(rss_source.ai_model.value),
+                        response_format="text"
+                    )
+                
                 if response_content is None:
                     continue
-
-            await publish_validated_rss_post(client, rss_source, post, response_content)
+            
+            await publish_validated_rss_post(client, rss_source, post, response_content, parsed_image)
             any_post = True
 
-        if any_post:          
-            logger.info(f"RSS {rss_source.id}: Новые сообщения опубликованы")
-        else:
+        if not any_post:          
             logger.info(f"RSS {rss_source.id}: Нет новых сообщений для публикации")
 
 
 async def publish_validated_rss_post(
-        client: TelegramClient, rss_source: Source, post: feedparser.FeedParserDict, ai_text: str|None=None):
+        client: TelegramClient, rss_source: Source, post: feedparser.FeedParserDict, ai_text: str|None=None, parsed_image: str|None=None):
     try_rss_type(rss_source)
 
     tags = get_tags(post)
@@ -59,15 +86,19 @@ async def publish_validated_rss_post(
         ) if ai_text is None else ai_text
 
     enclosures = [e.href for e in getattr(post, 'enclosures', [])]
-    if not enclosures:
-        await client.send_message(rss_source.target, caption, parse_mode='md')
-    else:
-        #telethon плохо работает со списком ссылок на файлы в интернете, поэтому скачиваем в память если файл не один 
-        prepared_files = enclosures[0] \
-            if len(enclosures) == 1 \
-            else await prepare_media_from_urls(enclosures)
-        
-        await client.send_file(rss_source.target, prepared_files, caption=caption, parse_mode='md')
+    enclosures = [parsed_image] if parsed_image else None 
+
+    try:
+        if not enclosures:
+            await client.send_message(rss_source.target, caption, parse_mode='md')
+        else:
+            #telethon плохо работает со списком ссылок на файлы в интернете, поэтому скачиваем в память если файл не один 
+            prepared_files = await prepare_media_from_urls(enclosures)
+            await client.send_file(rss_source.target, prepared_files, caption=caption, parse_mode='md')
+    except Exception as e:
+        logger.error(f"Ошибка при отправки сообщения: rss {rss_source.id}: {e}")
+    
+    logger.info(f"Сообщение отправлено: rss {rss_source.id}")
 
 
 async def get_new_rss_posts(rss_source: Source):

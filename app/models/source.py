@@ -1,9 +1,17 @@
 from sqlalchemy import JSON, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from .base import Base
+import enum
+from sqlalchemy import Enum
+from app.models.base import Base
+
+class AiModel(enum.Enum):
+    GEMINI25_FLASH = "gemini-2-5-flash"
+    GEMINI25_FLASH_LITE = "gemini-2-5-flash-lite"
+    GEMINI25_PRO = "gemini-2-5-pro"
+    GHATGPT_3 = "chat-gpt-3"
+    GHATGPT_4_O_MINI = "gpt-4o-mini"
 
 class Source(Base):
-
     __tablename__ = 'sources'
     
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -24,6 +32,7 @@ class Source(Base):
     allowed_filter: Mapped["Filter"] = relationship("Filter", foreign_keys=[allowed_filter_id], lazy="selectin")
     forbidden_filter: Mapped["Filter"] = relationship("Filter", foreign_keys=[forbidden_filter_id], lazy="selectin")
     ai_prompt: Mapped["AIPrompt"] = relationship("AIPrompt", foreign_keys=[ai_prompt_id], lazy="selectin")
+    ai_model: Mapped[AiModel] = mapped_column(Enum(AiModel), default=AiModel.GEMINI25_FLASH_LITE)
 
     __mapper_args__ = {
         "polymorphic_on": "type",

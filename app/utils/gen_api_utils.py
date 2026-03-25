@@ -4,7 +4,7 @@ import httpx
 from loguru import logger
 
 async def gen_api_send(
-          message: str, prompt: str, token: str, model: str="gemini-2-5-flash", time_out: float=15.0):
+          message: str, prompt: str, token: str, model: str="gemini-2-5-flash", response_format: str="text", time_out: float=15.0):
     
     if not all(f.strip() for f in [message, prompt, token]):
          return None
@@ -19,6 +19,7 @@ async def gen_api_send(
 
     data_input = {
         "is_sync": True,
+        "response_format": {"type":f"{response_format}"},
         "messages": [
             {"role": "user", "content": f"сегодняшняя дата: {date.today().strftime("%d.%m.%Y")}. {prompt} {message}"}
         ]

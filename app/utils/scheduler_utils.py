@@ -17,7 +17,7 @@ def get_handler_func(source_type: str):
 
     return handler_func
 
-async def sync_active_jobs(scheduler, client, session, api_key, api_model, head_job_name="head_job"):
+async def sync_active_jobs(scheduler, client, session, api_key, head_job_name="head_job"):
     '''запуск всех активных источников и синхронизации с БД (для удаления и добавления)'''
     logger.debug(f"Синхронизация обработчиков...")
     scheduler.add_job(
@@ -27,16 +27,15 @@ async def sync_active_jobs(scheduler, client, session, api_key, api_model, head_
             scheduler,
             client,
             session,
-            api_key, 
-            api_model
+            api_key
         ],
         id=head_job_name,
         replace_existing=True
     )
-    await setup_active_jobs(scheduler, client, session, api_key, api_model, head_job_name)
+    await setup_active_jobs(scheduler, client, session, api_key, head_job_name)
 
     
-async def setup_active_jobs(scheduler, client, session, api_key, api_model, head_job_name="head_job"):
+async def setup_active_jobs(scheduler, client, session, api_key, head_job_name="head_job"):
     '''Регистрация источников в расписании'''
     sources = await get_source_list(session, is_active=True, fields=[Source.id, Source.name, Source.type, Source.cron]) 
     
@@ -46,7 +45,7 @@ async def setup_active_jobs(scheduler, client, session, api_key, api_model, head
 
     # ничего не делаем если нет изменений
     if current_jobs == new_jobs:
-        logger.debug(f"Изменений в списке обработчиков не найдено")
+        #logger.debug(f"Изменений в списке обработчиков не найдено")
         return
 
     # собираем множества добавленных обработчиков и удаленных
@@ -70,8 +69,7 @@ async def setup_active_jobs(scheduler, client, session, api_key, api_model, head
                         client,
                         session,
                         source.id,
-                        str(api_key), 
-                        str(api_model)
+                        str(api_key)
                     ],
                     id=job_id,
                     replace_existing=True
