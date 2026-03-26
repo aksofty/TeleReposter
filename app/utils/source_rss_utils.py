@@ -17,7 +17,7 @@ from app.utils.parse_utils import get_clean_body_html
 
 #async def publish_rss_posts_on_telegram(
 async def post_handler_rss(
-        client: TelegramClient, session: AsyncSession, source_id: int, gen_api_token: str="", gen_api_model: str=""):
+        client: TelegramClient, session: AsyncSession, source_id: int, gen_api_token: str=""):
     
     rss_source = await get_source(session, source_id)
 
@@ -86,13 +86,13 @@ async def publish_validated_rss_post(
         ) if ai_text is None else ai_text
 
     enclosures = [e.href for e in getattr(post, 'enclosures', [])]
-    enclosures = [parsed_image] if parsed_image else None 
+    enclosures = [parsed_image] if parsed_image else enclosures 
 
     try:
         if not enclosures:
-            await client.send_message(rss_source.target, caption, parse_mode='md')
+            await client.send_message(rss_source.target, caption, link_preview=False, parse_mode='md')
         else:
-            #telethon плохо работает со списком ссылок на файлы в интернете, поэтому скачиваем в память если файл не один 
+            #telethon плохо работает со списком ссылок на файлы в интернете, поэтому скачиваем в память 
             prepared_files = await prepare_media_from_urls(enclosures)
             await client.send_file(rss_source.target, prepared_files, caption=caption, parse_mode='md')
     except Exception as e:

@@ -35,7 +35,7 @@ async def main():
 
         scheduler = AsyncIOScheduler()
         await sync_active_jobs(
-            scheduler, client, session, Config.GEN_API_KEY)
+            scheduler, client, session, Config.GEN_API_KEY, "head_job")
         
         scheduler.start()
         logger.info(f"Все обработчики добавлены в расписание")

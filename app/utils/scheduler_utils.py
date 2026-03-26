@@ -17,7 +17,7 @@ def get_handler_func(source_type: str):
 
     return handler_func
 
-async def sync_active_jobs(scheduler, client, session, api_key, head_job_name="head_job"):
+async def sync_active_jobs(scheduler, client, session, api_key, head_job_name):
     '''запуск всех активных источников и синхронизации с БД (для удаления и добавления)'''
     logger.debug(f"Синхронизация обработчиков...")
     scheduler.add_job(
@@ -27,7 +27,8 @@ async def sync_active_jobs(scheduler, client, session, api_key, head_job_name="h
             scheduler,
             client,
             session,
-            api_key
+            api_key,
+            head_job_name
         ],
         id=head_job_name,
         replace_existing=True
@@ -35,7 +36,7 @@ async def sync_active_jobs(scheduler, client, session, api_key, head_job_name="h
     await setup_active_jobs(scheduler, client, session, api_key, head_job_name)
 
     
-async def setup_active_jobs(scheduler, client, session, api_key, head_job_name="head_job"):
+async def setup_active_jobs(scheduler, client, session, api_key, head_job_name):
     '''Регистрация источников в расписании'''
     sources = await get_source_list(session, is_active=True, fields=[Source.id, Source.name, Source.type, Source.cron]) 
     
@@ -62,17 +63,22 @@ async def setup_active_jobs(scheduler, client, session, api_key, head_job_name="
         for source in sources:
             job_id = jobId(source)
             if job_id in added_jobs:
-                scheduler.add_job(
-                    get_handler_func(source.type),
-                    trigger=CronTrigger.from_crontab(source.cron),
-                    args=[
-                        client,
-                        session,
-                        source.id,
-                        str(api_key)
-                    ],
-                    id=job_id,
-                    replace_existing=True
-                )
+                try:
+                    scheduler.add_job(
+                        get_handler_func(source.type),
+                        trigger=CronTrigger.from_crontab(source.cron),
+                        args=[
+                            client,
+                            session,
+                            source.id,
+                            str(api_key)
+                        ],
+                        id=job_id,
+                        replace_existing=True
+                    )
+                except Exception as e:
+                    logger.error(f"Ошибка добавления источника в расписание: {e}")
+                    continue
+
                 logger.info(f"Новый обработчик {job_id}:{source.name} добавлен в расписание")
 

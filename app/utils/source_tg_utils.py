@@ -36,7 +36,7 @@ async def get_all_messages_from_group(client: TelegramClient, source: str, first
 
 #async def post_validated_messages(
 async def post_handler_tg(
-    client: TelegramClient, session: AsyncSession, source_id: int, gen_api_token: str="", gen_api_model: str=""):
+    client: TelegramClient, session: AsyncSession, source_id: int, gen_api_token: str=""):
     """Репостит сообщения, которые прошли валидацию"""
 
     tg_source = await get_source(session, source_id)
