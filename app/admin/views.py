@@ -53,8 +53,10 @@ class SourceTgView(BaseView):
 
 
 class SourceFilterView(BaseView):
+    list_columns = ['name', 'keywords']
     datamodel = SQLAInterface(Filter) # type: ignore
 
 
 class SourceAIPromtView(BaseView):
+    list_columns = ['name', 'prompt']
     datamodel = SQLAInterface(AIPrompt) # type: ignore
