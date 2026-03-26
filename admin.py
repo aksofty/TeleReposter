@@ -3,10 +3,12 @@ from flask import Flask
 from flask_appbuilder import AppBuilder
 from flask_sqlalchemy import SQLAlchemy
 from app.admin.utils import add_all_views1, create_admin
-from app import DB_PATH
+from app import DB_PATH, basedir
 from app.config import Config
 
-app = Flask(__name__)
+template_dir = os.path.join(basedir, 'admin', 'templates')
+app = Flask(__name__, template_folder=template_dir)
+
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{DB_PATH}"
 app.config['SECRET_KEY'] = Config.ADMIN_SECRET
 app.config['CSRF_ENABLED'] = True

@@ -1,4 +1,7 @@
-from flask_appbuilder import ModelView
+import os
+
+from flask import current_app, request
+from flask_appbuilder import BaseView, ModelView, expose, has_access
 from app.models.base import Base
 from app.models.source_rss import SourceRss
 from app.models.source_tg import SourceTg
@@ -6,7 +9,7 @@ from app.models.source import AIPrompt, Filter
 from flask_appbuilder.models.sqla.interface import SQLAInterface
 
 
-class BaseView(ModelView):
+class BaseBDView(ModelView):
     list_columns = ['name', 'cron']
     label_columns = {
         "name": "Название",
@@ -28,9 +31,9 @@ class BaseView(ModelView):
     }
 
 
-class SourceRssView(BaseView):
+class SourceRssView(BaseBDView):
     datamodel = SQLAInterface(SourceRss) # type: ignore
-    list_columns = BaseView.list_columns + ['is_active']
+    list_columns = BaseBDView.list_columns + ['is_active']
 
     add_columns = edit_columns = [
         'is_active', 'name', 'url', 'target', 'cron', 'limit', 
@@ -39,9 +42,9 @@ class SourceRssView(BaseView):
     ]
 
     
-class SourceTgView(BaseView):
+class SourceTgView(BaseBDView):
     datamodel = SQLAInterface(SourceTg) # type: ignore
-    list_columns = BaseView.list_columns + ['is_active']
+    list_columns = BaseBDView.list_columns + ['is_active']
     readonly_columns = ['id']
 
     add_columns = edit_columns = [
@@ -52,11 +55,31 @@ class SourceTgView(BaseView):
 
 
 
-class SourceFilterView(BaseView):
+class SourceFilterView(BaseBDView):
     list_columns = ['name', 'keywords']
     datamodel = SQLAInterface(Filter) # type: ignore
 
 
-class SourceAIPromtView(BaseView):
+class SourceAIPromtView(BaseBDView):
     list_columns = ['name', 'prompt']
     datamodel = SQLAInterface(AIPrompt) # type: ignore
+
+class LogView(BaseView):
+    default_vew = 'show_logs'
+
+    @expose('/show/')
+    @has_access
+    def show_logs(self):
+        log_file = "app/logs/all_logs.log"
+        if os.path.exists(log_file):
+            with open(log_file, "r") as f:
+                content = f.readlines()[-200:]
+            content = "\n".join(content)
+        else:
+            content = "file doesnt exist"
+
+        if request.args.get('raw'):
+            return content
+        
+        return self.render_template('logs.html', content=content.strip())
+    

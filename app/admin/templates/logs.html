@@ -1,0 +1,51 @@
+{% extends "appbuilder/base.html" %}
+{% block content %}
+    <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+        <h2>Логи постинга</h2>
+        <div style="background: #333; color: #fff; padding: 5px 15px; border-radius: 20px; font-family: monospace;">
+            Обновление через: <span id="timer">5</span> сек.
+        </div>
+    </div>
+
+    <pre id="log-content" style="white-space: pre-wrap; background: #1e1e1e; color: #dcdcdc; padding: 20px; height: 600px; overflow-y: auto; border-radius: 5px;">
+        {{ content }}
+    </pre>
+
+    <script>
+        const updateInterval = 5; // Интервал в секундах
+        let timeLeft = updateInterval;
+
+        function updateLogs() {
+            // URL с параметром ?raw=1, чтобы получить только текст (см. предыдущий совет по views.py)
+            fetch(window.location.href + (window.location.search ? '&' : '?') + 'raw=1')
+                .then(response => response.text())
+                .then(data => {
+                    const logBlock = document.getElementById('log-content');
+                    logBlock.textContent = data.trim(); // Убираем лишние пробелы при вставке
+                    logBlock.scrollTop = logBlock.scrollHeight; // Автоскролл вниз
+                    
+                    // Сброс таймера после успешной загрузки
+                    timeLeft = updateInterval;
+                    document.getElementById('timer').textContent = timeLeft;
+                })
+                .catch(err => console.error('Ошибка загрузки логов:', err));
+        }
+
+        // Логика таймера
+        setInterval(() => {
+            timeLeft--;
+            if (timeLeft <= 0) {
+                document.getElementById('timer').textContent = "Обновление...";
+                updateLogs();
+            } else {
+                document.getElementById('timer').textContent = timeLeft;
+            }
+        }, 1000);
+
+        // Скролл вниз при первой загрузке
+        window.onload = () => {
+            const logBlock = document.getElementById('log-content');
+            logBlock.scrollTop = logBlock.scrollHeight;
+        };
+    </script>
+{% endblock %}

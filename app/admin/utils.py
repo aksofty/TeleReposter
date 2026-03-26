@@ -1,10 +1,12 @@
-from app.admin.views import SourceAIPromtView, SourceFilterView, SourceRssView, SourceTgView
+from app.admin.views import LogView, SourceAIPromtView, SourceFilterView, SourceRssView, SourceTgView
 
 def add_all_views1(appbuilder):
     appbuilder.add_view(SourceTgView, "Источники Telegram", category="Источники")
     appbuilder.add_view(SourceRssView, "Источники RSS", category="Источники")
     appbuilder.add_view(SourceAIPromtView, "AI промпты", category="Дополнительно")
     appbuilder.add_view(SourceFilterView, "Фильтры", category="Дополнительно")
+    appbuilder.add_view(LogView, "Логи постинга", category="Логи", href="/logview/show/")
+
 
 def create_admin(appbuilder, admin_name, admin_pass):
     if not appbuilder.sm.find_user(username="admin"):
